@@ -194,3 +194,42 @@ least_conn：以服务器连接数为依据，哪个服务器连接数少，匹�
     }
 ```
 
+修改nginx文件后进行重新加载文件指令：./nginx -s reload
+
+![image-20211030185536154](C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211030185536154.png)
+
+
+
+
+
+
+
+### 1、正向代理和反向代理
+
+1. **什么是代理服务器**
+
+所谓代理服务器就是位于发起请求的客户端与原始服务器端之间的一台跳板服务器，正向代理可以隐藏客户端，反向代理可以隐藏原始服务器。
+
+**2. 正向代理**
+
+用户知道目标服务器地址，但由于网络限制等原因，无法直接访问。这时候需要先连接代理服务器，然后再由代理服务器访问目标服务器。
+
+<img src="C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211030184602795.png" alt="image-20211030184602795"  />
+
+**3. 反向代理**
+
+反向代理对用户则是不可知的，比如我们访问百度网站，百度的代理服务器对外的域名为 [https://www.baidu.com](https://link.zhihu.com/?target=https%3A//www.baidu.com) 。具体内部的服务器节点我们不知道，现实中我们通过访问百度的代理服务器后，代理服务器给我们转发请求到他们N多的服务器节点中的一个给我们进行搜索后将结果返回。
+
+![image-20211030184626749](C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211030184626749.png)
+
+
+
+### 2、负载均衡
+
+轮询、加权轮询、 IP hash
+
+
+
+### 3、动静分离
+
+![image-20211030185104870](C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211030185104870.png)

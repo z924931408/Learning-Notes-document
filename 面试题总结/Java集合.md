@@ -188,6 +188,307 @@ put get过程
 
 **modCount** 记录了 ArrayList 结构性变化的次数，继承自 AbstractList。所有涉及结构变化的方法都会增加该值。expectedModCount 是迭代器初始化时记录的 modCount 值，每次访问新元素时都会检查 modCount 和 expectedModCount 是否相等，不相等就会抛出异常。这种机制叫做 fail-fast，所有集合类都有这种机制。
 
+### 2、核心源码解读
+
+```java
+public class ArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable, java.io.Serializable
+{
+ /**
+     * 默认初始化容量为10
+     */
+    private static final int DEFAULT_CAPACITY = 10;
+
+    /**
+     * 指定该ArrayList容量为0时，返回该空数组
+     */
+    private static final Object[] EMPTY_ELEMENTDATA = {};
+    
+    /**
+     *当调用无参构造方法，返回的是该数组，刚创建一个ArrayList时，其内数据量为0
+     * 它与EMPTY_ELEMENTDATA区别是，该数组是默认返回的，而EMPTY_ELEMENTDATA是在用户指定容量为0时返回
+     */
+    private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
+
+    /**
+     *添加保存到ArrayList的元素，底层是数组
+     */
+    transient Object[] elementData; 
+
+    /**
+     * ArrayList的实际大小，默认为0
+     */
+    private int size;
+    
+    /**
+    *无参构造函数，使用无惨构造函数时是在第一次添加元素时初始化容量为 10 的。
+    *List<String> list = new ArrayList<String>();
+    */
+    public ArrayList() {
+        this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
+    }
+    
+    
+    /**
+    *带初始容量的构造函数
+    *List<String> list = new ArrayList<String>(5);
+    */
+    public ArrayList(int initialCapacity) {
+        if (initialCapacity > 0) {
+            this.elementData = new Object[initialCapacity];
+        } else if (initialCapacity == 0) {
+            //指定该ArrayList容量为0时，返回该空数组
+            this.elementData = EMPTY_ELEMENTDATA;
+        } else {
+            throw new IllegalArgumentException("Illegal Capacity: "+
+                                               initialCapacity);
+        }
+    }
+    
+    /**
+    *包含指定集合的元素列表
+    *
+    */
+    public ArrayList(Collection<? extends E> c) {
+        //首先将list集合转换为数组，使用的是父接口Collection的方法
+        elementData = c.toArray();
+        if ((size = elementData.length) != 0) {
+            // c.toArray might (incorrectly) not return Object[] (see 6260652)
+            if (elementData.getClass() != Object[].class)
+                //将集合中的数据进行拷贝到新的数组中
+                elementData = Arrays.copyOf(elementData, size, Object[].class);
+        } else {
+            // 如果长度为0，就把空数组的地址赋值给集合存元素的数组
+            this.elementData = EMPTY_ELEMENTDATA;
+        }
+    }
+   
+ //将集合中的数据进行拷贝到新的数组中
+public static <T,U> T[] copyOf(U[] original, int newLength, Class<? extends T[]> newType) {
+    @SuppressWarnings("unchecked")
+    T[] copy = ((Object)newType == (Object)Object[].class)
+        ? (T[]) new Object[newLength]
+        : (T[]) Array.newInstance(newType.getComponentType(), newLength);
+    System.arraycopy(original, 0, copy, 0,
+                     Math.min(original.length, newLength));
+    return copy;
+}
+    
+ /**
+ *添加元素
+ */
+ public boolean add(E e) {
+        //判断数组是否已经初始化，如果未初始化的话就赋值为10
+        ensureCapacityInternal(size + 1);  // Increments modCount!!
+        //将指定的元素添加到此列表的尾部
+        elementData[size++] = e;
+        return true;
+  }
+    
+ private void ensureCapacityInternal(int minCapacity) {
+        //第一步如果原数组为空,那么长度为10,要不然就加一
+        if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+        }
+
+        ensureExplicitCapacity(minCapacity);
+ }
+   
+ /**
+ *判断是否需要扩容，如果新增元素后长度大于原来elementData的长度，需要通过grow(minCapacity)进行扩容
+ */
+ private void ensureExplicitCapacity(int minCapacity) {
+        modCount++;
+
+        // overflow-conscious code
+        if (minCapacity - elementData.length > 0)
+            grow(minCapacity);
+ }
+ 
+ /**
+ *grow为扩容核心方法
+ *
+ */
+ private void grow(int minCapacity) {
+        // overflow-conscious code
+        int oldCapacity = elementData.length;
+        //增加到原容量的1.5倍
+        int newCapacity = oldCapacity + (oldCapacity >> 1);
+        //如果新增元素后长度比扩容1.5倍还大，就直接用新增元素长度加1
+        if (newCapacity - minCapacity < 0)
+            newCapacity = minCapacity;
+        if (newCapacity - MAX_ARRAY_SIZE > 0)
+            newCapacity = hugeCapacity(minCapacity);
+        // minCapacity is usually close to size, so this is a win:
+        elementData = Arrays.copyOf(elementData, newCapacity);
+ }
+ 
+ private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+    
+ private static int hugeCapacity(int minCapacity) {
+        if (minCapacity < 0) // overflow
+            throw new OutOfMemoryError();
+        return (minCapacity > MAX_ARRAY_SIZE) ?
+            Integer.MAX_VALUE :
+            MAX_ARRAY_SIZE;
+ }
+ 
+ /**
+ *数组元素个数
+ */
+ public int size() { return size;}
+    
+    
+ public boolean isEmpty() { return size == 0;}
+    
+ public boolean contains(Object o) { return indexOf(o) >= 0;}
+    
+ public int indexOf(Object o) {
+        if (o == null) {
+            for (int i = 0; i < size; i++)
+                if (elementData[i]==null)
+                    return i;
+        } else {
+            for (int i = 0; i < size; i++)
+                if (o.equals(elementData[i]))
+                    return i;
+        }
+        return -1;
+ }
+    
+    
+ public int lastIndexOf(Object o) {
+        if (o == null) {
+            for (int i = size-1; i >= 0; i--)
+                if (elementData[i]==null)
+                    return i;
+        } else {
+            for (int i = size-1; i >= 0; i--)
+                if (o.equals(elementData[i]))
+                    return i;
+        }
+        return -1;
+ }
+    
+ /**
+ *根据索引获取元素
+ */
+ public E get(int index) {
+        rangeCheck(index);
+
+        return elementData(index);
+ }
+    
+ private void rangeCheck(int index) {
+        if (index >= size)
+            throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+ }
+    
+ E elementData(int index) {
+        return (E) elementData[index];
+ }
+    
+    
+ public E set(int index, E element) {
+     //判断索引是否越界   
+     rangeCheck(index);
+	 //获取旧索引的元素，用于返回
+     E oldValue = elementData(index);
+     //然后将索引对应位置指向新参数
+     elementData[index] = element;
+     return oldValue;
+ }
+ 
+ /**
+ *在index索引处插入一个元素
+ */
+ public void add(int index, E element) {
+        rangeCheckForAdd(index);
+
+        ensureCapacityInternal(size + 1);  // Increments modCount!!
+        //将索引之后的数据往后移一位
+        System.arraycopy(elementData, index, elementData, index + 1,
+                         size - index);
+        elementData[index] = element;
+        size++;
+ }
+ 
+ /**
+ *删除index在中间的元素，后面的元素往前移一位；若是删除最后一位，直接置null
+ *
+ */
+ public E remove(int index) {
+        rangeCheck(index);
+
+        modCount++;
+        E oldValue = elementData(index);
+        //该index之后的长度
+        int numMoved = size - index - 1;
+        //将index之后的数据往前移一位
+        if (numMoved > 0)
+            System.arraycopy(elementData, index+1, elementData, index,
+                             numMoved);
+        elementData[--size] = null; // clear to let GC do its work
+
+        return oldValue;
+ }
+    
+ /**
+ *根据元素删除，需要找到元素第一次出现的index，然后将index后面的元素往前移一位
+ *
+ */
+ public boolean remove(Object o) {
+        if (o == null) {
+            for (int index = 0; index < size; index++)
+                if (elementData[index] == null) {
+                    fastRemove(index);
+                    return true;
+                }
+        } else {
+            for (int index = 0; index < size; index++)
+                if (o.equals(elementData[index])) {
+                    fastRemove(index);
+                    return true;
+                }
+        }
+        return false;
+ }
+    
+    
+ private void fastRemove(int index) {
+        modCount++;
+        int numMoved = size - index - 1;
+        if (numMoved > 0)
+            System.arraycopy(elementData, index+1, elementData, index,
+                             numMoved);
+        elementData[--size] = null; // clear to let GC do its work
+ }
+ 
+ /**
+ *清空list元素
+ *注意：如果list重复使用，清空list直接用clear
+ *如果list只清空一次，那么，可直接list=null
+ */
+ public void clear() {
+        modCount++;
+
+        // clear to let GC do its work
+        for (int i = 0; i < size; i++)
+            elementData[i] = null;
+
+        size = 0;
+ }
+    
+ 
+}
+```
+
+
+
+
+
+
+
 
 
 ## 三、Linkedlist
@@ -199,6 +500,69 @@ put get过程
 LinkedList 包含三个重要的成员：size、first 和 last。size 是双向[链表](https://www.cxyxiaowu.com/16044.html)中节点的个数，first 和 last 分别指向首尾节点的引用。
 
 LinkedList 的优点在于可以将零散的内存单元通过附加引用的方式关联起来，形成按链路顺序查找的线性结构，内存利用率较高。
+
+
+
+### 2、核心源码解读
+
+```java
+public class LinkedList<E>
+    extends AbstractSequentialList<E>
+    implements List<E>, Deque<E>, Cloneable, java.io.Serializable
+{
+    transient int size = 0;
+    
+    //用来表示LinkedList的头节点。
+    transient Node<E> first;
+    
+    //用来表示LinkedList的尾节点。
+    transient Node<E> last;
+    
+    /**
+    * Node 类是LinkedList中的私有内部类，LinkedList中就是通过Node来存储集合中的元素。
+    * E ：节点的值。
+    * Node next：当前节点的后一个节点的引用（可以理解为指向当前节点的后一个节点的指针）
+    * Node prev:当前节点的前一个节点的引用（可以理解为指向当前节点的前一个节点的指针）
+    */
+    private static class Node<E> {
+        E item;
+        Node<E> next;
+        Node<E> prev;
+
+        Node(Node<E> prev, E element, Node<E> next) {
+            this.item = element;
+            this.next = next;
+            this.prev = prev;
+        }
+    }
+    
+    /**
+    *空构造器
+    *LinkedList不需要设置初始容量，是因为可以通过链接新节点一直无限制地延展下去
+    */
+    public LinkedList() {}
+   
+    
+    public LinkedList(Collection<? extends E> c) {
+        this();
+        addAll(c);
+    }
+    
+    public boolean addAll(Collection<? extends E> c) {
+        return addAll(size, c);
+    }
+    
+    
+    
+    
+    
+
+}
+```
+
+
+
+
 
 
 

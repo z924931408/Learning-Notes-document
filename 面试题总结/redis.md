@@ -1066,6 +1066,8 @@ Jedis是Redis的Java实现的客户端，其API提供了比较全面的Redis命�
 
 上述情况就会导致不一致的情形出现。而且，如果不采用给缓存设置过期时间策略，该数据永远都是脏数据。
 
+![image-20211110075155583](C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211110075155583.png)
+
 那么，如何解决呢？采用延时双删策略
 
 伪代码如下
@@ -1169,6 +1171,10 @@ ok,这也就是说。如果第二次删除缓存失败，会再次出现缓存�
 （5）请求A将查到的旧值写入缓存
 
 **ok，如果发生上述情况，确实是会发生脏数据**。
+
+![image-20211110075942171](C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211110075942171.png)
+
+![image-20211110075956731](C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211110075956731.png)
 
 **然而，发生这种情况的概率又有多少呢？**
 
@@ -1280,7 +1286,13 @@ ok,这也就是说。如果第二次删除缓存失败，会再次出现缓存�
 
 
 
+### 5、延迟双删
 
+![image-20211110075805583](C:\Users\92493\AppData\Roaming\Typora\typora-user-images\image-20211110075805583.png)
+
+解决互联网高并发极端场景，写缓存发生在删缓存之后。
+
+延迟到1~2秒。
 
 ## 十、什么是布隆过滤器？如何解决高并发缓存穿透问题？
 

@@ -25,6 +25,7 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.cluster.support.FailoverCluster;
 
 /**
+ * 只有一个功能，将一组Invoker聚合成一个具有集群容错能力的ClusterInvoker
  * Cluster. (SPI, Singleton, ThreadSafe)
  * <p>
  * <a href="http://en.wikipedia.org/wiki/Computer_cluster">Cluster</a>
@@ -37,7 +38,7 @@ public interface Cluster {
 
     /**
      * Merge the directory invokers to a virtual invoker.
-     *
+     * 将一组Invokers聚合成一个Invoker
      * @param <T>
      * @param directory
      * @return cluster invoker
@@ -46,6 +47,11 @@ public interface Cluster {
     @Adaptive
     <T> Invoker<T> join(Directory<T> directory) throws RpcException;
 
+    /**
+     * 获取集群容错扩展点实实现
+     * @param name
+     * @return
+     */
     static Cluster getCluster(String name) {
         return getCluster(name, true);
     }

@@ -136,7 +136,7 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
             return null;
         }
         String methodName = invocation == null ? StringUtils.EMPTY_STRING : invocation.getMethodName();
-
+        //获取粘滞连接配置
         boolean sticky = invokers.get(0).getUrl()
                 .getMethodParameter(methodName, CLUSTER_STICKY_KEY, DEFAULT_CLUSTER_STICKY);
 
@@ -145,15 +145,18 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
             stickyInvoker = null;
         }
         //ignore concurrency problem
+        //开启粘滞连接配置 且存在已经创建的stickyInvoker粘滞连接
         if (sticky && stickyInvoker != null && (selected == null || !selected.contains(stickyInvoker))) {
+            //有效性检测
             if (availablecheck && stickyInvoker.isAvailable()) {
                 return stickyInvoker;
             }
         }
-
+        //根据负载均衡策略进行服务选择
         Invoker<T> invoker = doSelect(loadbalance, invocation, invokers, selected);
 
         if (sticky) {
+            //如果配置粘滞连接为true 则当前选择的Invoker保存在stickyInvoker粘滞连接变量
             stickyInvoker = invoker;
         }
         return invoker;
@@ -253,8 +256,9 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
         if (contextAttachments != null && contextAttachments.size() != 0) {
             ((RpcInvocation) invocation).addObjectAttachments(contextAttachments);
         }
-
+        //通过Directory过滤服务列表
         List<Invoker<T>> invokers = list(invocation);
+        //初始化，负载均衡
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
         return doInvoke(invocation, invokers, loadbalance);

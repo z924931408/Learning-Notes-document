@@ -50,6 +50,11 @@ public abstract class AbstractCluster implements Cluster {
 
     @Override
     public <T> Invoker<T> join(Directory<T> directory) throws RpcException {
+
+        /**
+         * doJoin:创建clusterInvoker
+         * buildClusterInterceptors:构建cluster拦截器链
+         */
         return buildClusterInterceptors(doJoin(directory), directory.getUrl().getParameter(REFERENCE_INTERCEPTOR_KEY));
     }
 

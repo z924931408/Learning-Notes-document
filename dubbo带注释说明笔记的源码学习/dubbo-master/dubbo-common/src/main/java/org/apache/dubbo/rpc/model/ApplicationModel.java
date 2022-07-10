@@ -77,6 +77,10 @@ public class ApplicationModel {
 
     private static final ExtensionLoader<FrameworkExt> LOADER = ExtensionLoader.getExtensionLoader(FrameworkExt.class);
 
+    /**
+     * Dubbo提供了框架扩展接口FrameworkExt，初始化时，利用SPI加载所有的实现，
+     * 然后调用它们的initialize()方法。目前只有Environment会初始化，它会保存默认配置中心的数据。
+     */
     public static void initFrameworkExts() {
         Set<FrameworkExt> exts = ExtensionLoader.getExtensionLoader(FrameworkExt.class).getSupportedExtensionInstances();
         for (FrameworkExt ext : exts) {

@@ -29,12 +29,18 @@ class InjvmExporter<T> extends AbstractExporter<T> {
 
     private final String key;
 
+    /**
+     * 本地服务的暴露者集合
+     */
     private final Map<String, Exporter<?>> exporterMap;
 
     InjvmExporter(Invoker<T> invoker, String key, Map<String, Exporter<?>> exporterMap) {
         super(invoker);
         this.key = key;
         this.exporterMap = exporterMap;
+        /**
+         * org.apache.dubbo.demo.DemoService : InjvmExporter
+         */
         exporterMap.put(key, this);
     }
 

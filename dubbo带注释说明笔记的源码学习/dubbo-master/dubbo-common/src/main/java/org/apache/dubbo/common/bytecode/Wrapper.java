@@ -115,6 +115,85 @@ public abstract class Wrapper {
 
         return WRAPPER_MAP.computeIfAbsent(c, key -> makeWrapper(key));
     }
+/**
+    public class Wrapper1 extends Wrapper implements DC {
+        public static String[] pns;
+        public static Map pts;
+        public static String[] mns;
+        public static String[] dmns;
+        public static Class[] mts0;
+        public static Class[] mts1;
+
+        public String[] getPropertyNames() {
+            return pns;
+        }
+
+        public boolean hasProperty(String var1) {
+            return pts.containsKey(var1);
+        }
+
+        public Class getPropertyType(String var1) {
+            return (Class)pts.get(var1);
+        }
+
+        public String[] getMethodNames() {
+            return mns;
+        }
+
+        public String[] getDeclaredMethodNames() {
+            return dmns;
+        }
+
+        public void setPropertyValue(Object var1, String var2, Object var3) {
+            try {
+                SyncHelloService var4 = (SyncHelloService)var1;
+            } catch (Throwable var6) {
+                throw new IllegalArgumentException(var6);
+            }
+
+            throw new NoSuchPropertyException("Not found property \"" + var2 + "\" filed or setter method in class qunar.tc.dubbo.async.provider.SyncHelloService.");
+        }
+
+        public Object getPropertyValue(Object var1, String var2) {
+            try {
+                SyncHelloService var3 = (SyncHelloService)var1;
+            } catch (Throwable var5) {
+                throw new IllegalArgumentException(var5);
+            }
+
+            throw new NoSuchPropertyException("Not found property \"" + var2 + "\" filed or getter method in class qunar.tc.dubbo.async.provider.SyncHelloService.");
+        }
+
+        public Object invokeMethod(Object var1, String var2, Class[] var3, Object[] var4) throws InvocationTargetException {
+            SyncHelloService var5;
+            try {
+                var5 = (SyncHelloService)var1;
+            } catch (Throwable var8) {
+                throw new IllegalArgumentException(var8);
+            }
+
+            try {
+                if ("main".equals(var2) && var3.length == 1) {
+                    SyncHelloService.main((String[])var4[0]);
+                    return null;
+                }
+
+                if ("sayHello".equals(var2) && var3.length == 1) {
+                    return var5.sayHello((String)var4[0]);
+                }
+            } catch (Throwable var9) {
+                throw new InvocationTargetException(var9);
+            }
+
+            throw new NoSuchMethodException("Not found method \"" + var2 + "\" in class qunar.tc.dubbo.async.provider.SyncHelloService.");
+        }
+
+        public Wrapper1() {
+        }
+    }
+
+ **/
+
 
     private static Wrapper makeWrapper(Class<?> c) {
         if (c.isPrimitive()) {

@@ -169,33 +169,74 @@ public class ConfigValidationUtils {
     public static List<URL> loadRegistries(AbstractInterfaceConfig interfaceConfig, boolean provider) {
         // check && override if necessary
         List<URL> registryList = new ArrayList<URL>();
+        /**
+         *  dubbo的application的配置项：
+         *  <dubbo:application name="dubbo-demo-api-provider" hostname="DESKTOP-DTB7VQ9" />
+         */
         ApplicationConfig application = interfaceConfig.getApplication();
+
+        /**
+         * dubbo的注册中心信息，可能涵盖多种注册中心:
+         * <dubbo:registry address="zookeeper://192.168.1.73:2181?backup=192.168.1.230:2181,192.168.1.231:2181" protocol="zookeeper" port="2181" timeout="10000" />
+         */
         List<RegistryConfig> registries = interfaceConfig.getRegistries();
+        //当注册中心配置不为空
         if (CollectionUtils.isNotEmpty(registries)) {
+            //遍历注册中心对象
             for (RegistryConfig config : registries) {
+                //获取注册中心地址：zookeeper://192.168.1.73:2181
                 String address = config.getAddress();
                 if (StringUtils.isEmpty(address)) {
+                    //当地址空是，默认ip，"0.0.0.0"
                     address = ANYHOST_VALUE;
                 }
+                // 检测 address 是否合法
                 if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
                     Map<String, String> map = new HashMap<String, String>();
+                    /**
+                     * 将application的配置项与注册中心配置项配置参数组装到map里
+                     */
                     AbstractConfig.appendParameters(map, application);
                     AbstractConfig.appendParameters(map, config);
+                    //path -> org.apache.dubbo.registry.RegistryService
                     map.put(PATH_KEY, RegistryService.class.getName());
+                    //dubbo版本相关信息配置
                     AbstractInterfaceConfig.appendRuntimeParameters(map);
+                    //若无显示设置协议，默认dubbo
                     if (!map.containsKey(PROTOCOL_KEY)) {
+                        //protocol ：dubbo
                         map.put(PROTOCOL_KEY, DUBBO_PROTOCOL);
                     }
+
+                    /**
+                     * 解析得到 URL 列表，address 可能包含多个注册中心 ip，因此解析得到的是一个 URL 列表，例如——
+                     *
+                     * zookeeper://192.168.1.73:2181/org.apache.dubbo.registry.RegistryService?
+                     * application=dubbo-demo-api-provider
+                     * &
+                     * backup=192.168.1.230:2181,192.168.1.231:2181&dubbo=2.0.2&pid=56296
+                     * &
+                     * timeout=10000
+                     * &
+                     * timestamp=1644545334154
+                     */
                     List<URL> urls = UrlUtils.parseURLs(address, map);
 
+                    //遍历链接列表，并根据条件决定是否将其添加到 registryList 中
                     for (URL url : urls) {
-
                         url = URLBuilder.from(url)
                                 .addParameter(REGISTRY_KEY, url.getProtocol())
+                                //将 URL 协议头设置为 registry
                                 .setProtocol(extractRegistryType(url))
                                 .build();
+
+                        /**
+                         * 通过判断条件，决定是否添加 url 到 registryList 中，条件如下：
+                         * (服务提供者 && register = true 或 null) || (非服务提供者 && subscribe = true 或 null)
+                         */
                         if ((provider && url.getParameter(REGISTER_KEY, true))
                                 || (!provider && url.getParameter(SUBSCRIBE_KEY, true))) {
+                            // 加载注册中心链接
                             registryList.add(url);
                         }
                     }

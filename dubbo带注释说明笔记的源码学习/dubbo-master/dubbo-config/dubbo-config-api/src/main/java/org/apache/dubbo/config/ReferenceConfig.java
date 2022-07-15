@@ -202,6 +202,13 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
         if (ref == null) {
+            /**
+             * 1、检查和更新配置
+             * 2、检查stub、local
+             * 3、创建代理对象
+             * 4、分发init事件
+             *
+             */
             init();
         }
         return ref;
@@ -320,15 +327,19 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
+        //是否同一个jvm里
         if (shouldJvmRefer(map)) {
+            //优先引用同一个JVM内的provider
             URL url = new URL(LOCAL_PROTOCOL, LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
             invoker = REF_PROTOCOL.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
         } else {
+           //根据用户指定服务提供方地址，可以是服务提供方IP地址（直连方式）
             urls.clear();
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
+                //分割 点对点直连
                 String[] us = SEMICOLON_SPLIT_PATTERN.split(url);
                 if (us != null && us.length > 0) {
                     for (String u : us) {
@@ -336,6 +347,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                         if (StringUtils.isEmpty(url.getPath())) {
                             url = url.setPath(interfaceName);
                         }
+                        //解析，保存到urls集合
                         if (UrlUtils.isRegistry(url)) {
                             urls.add(url.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
                         } else {
@@ -343,10 +355,13 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                         }
                     }
                 }
-            } else { // assemble URL from register center's configuration
+            } else {
+                //从注册中心找到服务提供者
+                // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
                 if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
                     checkRegistry();
+                    //加载注册中心URL
                     List<URL> us = ConfigValidationUtils.loadRegistries(this, false);
                     if (CollectionUtils.isNotEmpty(us)) {
                         for (URL u : us) {
@@ -354,6 +369,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                             if (monitorUrl != null) {
                                 map.put(MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                             }
+                            //给注册中心URL添加要引用的服务参数：refer
                             urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
                         }
                     }
@@ -362,10 +378,22 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                     }
                 }
             }
-
+            //只有一个服务注册中心
             if (urls.size() == 1) {
+                //通过协议引用服务
+                /**
+                 *  interfaceClass    org.apache.dubbo.demo.DemoService
+                 *  urls.get(0)       registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService? application=dubbo-demo-api-consumer
+                 *                    &&dubbo=2.0.2&pid=28912&refer=application%3Ddubbo-demo-api-consumer%26dubbo%3D2.0.2%26
+                 *                    interface%3Dorg.apache.dubbo.demo.DemoService%26methods%3DsayHello%2CsayHelloAsync%26pid%3D28912%26
+                 *                    register.ip%3D192.168.31.148%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1657116246217&
+                 *                    registry=zookeeper&timeout=30000&timestamp=1657116602285
+                 */
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
+                /**
+                 * 存在多个服务注册中心
+                 */
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
                 for (URL url : urls) {
